@@ -7,6 +7,7 @@
     { "source": "/api/courses", "destination": "/api/courses" },
     { "source": "/api/course-photo", "destination": "/api/course-photo" },
     { "source": "/api/teetimes", "destination": "/api/teetimes" },
-    { "source": "/api/teetimes-batch", "destination": "/api/teetimes-batch" }
+    { "source": "/api/teetimes-batch", "destination": "/api/teetimes-batch" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
