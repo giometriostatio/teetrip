@@ -89,6 +89,10 @@ const MapView = forwardRef(function MapView(
   const recIds = new Set(recommendations.map((r) => r.placeId));
   recIdsRef.current = recIds;
 
+  const recRankMap = new Map(recommendations.map((r, i) => [r.placeId, i + 1]));
+  const recRankRef = useRef(recRankMap);
+  recRankRef.current = recRankMap;
+
   const updateMarkers = useCallback(() => {
     const cluster = clusterRef.current;
     if (!cluster) return;
@@ -120,7 +124,8 @@ const MapView = forwardRef(function MapView(
       else if (tt && !tt.available) type = 'unavailable';
       else if (!tt) type = 'available';
 
-      const icon = createMarkerIcon(type, isSelected);
+      const rank = isRec ? recRankRef.current.get(course.placeId) : null;
+      const icon = createMarkerIcon(type, isSelected, rank);
       if (!icon) return;
 
       const existing = markersRef.current.get(course.placeId);
