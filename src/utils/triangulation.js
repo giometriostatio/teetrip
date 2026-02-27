@@ -1,9 +1,10 @@
 import { getCentroid, haversineDistance, kmToMiles } from './mapHelpers.js';
 
-export function scoreCourses(courses, playerLocations, teeTimesMap, playerCount) {
+export function scoreCourses(courses, playerLocations, teeTimesMap, playerCount, filters = {}) {
   const scored = courses
     .filter((c) => {
       const tt = teeTimesMap[c.placeId];
+      // Hard filter: must have availability with tee times
       return tt && tt.available && tt.teeTimes.length > 0;
     })
     .map((course) => {
@@ -11,17 +12,32 @@ export function scoreCourses(courses, playerLocations, teeTimesMap, playerCount)
         haversineDistance(p.lat, p.lng, course.lat, course.lng)
       );
       const maxDistKm = Math.max(...distances);
+      const minDistKm = Math.min(...distances);
       const avgDistKm = distances.reduce((a, b) => a + b, 0) / distances.length;
 
       const tt = teeTimesMap[course.placeId];
       const fittingTimes = tt.teeTimes.filter((t) => t.slots >= playerCount);
 
+      // Distance fairness: minimize MAX distance any player drives (40%)
       const distScore = Math.max(0, 100 - maxDistKm * 1.5);
-      const fairnessScore = Math.max(0, 50 - (maxDistKm - Math.min(...distances)) * 2);
-      const availScore = Math.min(fittingTimes.length * 5, 50);
+      const fairnessBonus = Math.max(0, 50 - (maxDistKm - minDistKm) * 2);
+      const distFairness = distScore * 0.7 + fairnessBonus * 0.3;
+
+      // Tee time fit: slots that fit the group (30%)
+      const fitScore = Math.min(fittingTimes.length * 5, 50);
+
+      // Course rating (20%)
       const ratingScore = (course.rating || 3) * 10;
 
-      const total = distScore * 0.4 + fairnessScore * 0.2 + availScore * 0.2 + ratingScore * 0.2;
+      // Price proximity to filter range (10%)
+      let priceScore = 25;
+      if (fittingTimes.length > 0 && filters.priceMin != null && filters.priceMax != null) {
+        const avgPrice = fittingTimes.reduce((s, t) => s + (t.price || 0), 0) / fittingTimes.length;
+        const mid = (filters.priceMin + filters.priceMax) / 2;
+        priceScore = Math.max(0, 50 - Math.abs(avgPrice - mid) * 0.5);
+      }
+
+      const total = distFairness * 0.4 + fitScore * 0.3 + ratingScore * 0.2 + priceScore * 0.1;
 
       return {
         ...course,

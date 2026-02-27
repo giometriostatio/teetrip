@@ -6,8 +6,8 @@ import { PLAYER_COLORS, MIN_SEARCH_ZOOM } from '../constants.js';
 
 const MapView = forwardRef(function MapView(
   {
-    center,
-    zoom,
+    initialCenter,
+    initialZoom,
     courses,
     teeTimesMap,
     recommendations,
@@ -43,8 +43,8 @@ const MapView = forwardRef(function MapView(
     if (mapInstanceRef.current || !containerRef.current) return;
 
     const map = L.map(containerRef.current, {
-      center,
-      zoom,
+      center: initialCenter,
+      zoom: initialZoom,
       zoomControl: true,
       attributionControl: true,
     });
@@ -85,16 +85,6 @@ const MapView = forwardRef(function MapView(
       mapInstanceRef.current = null;
     };
   }, []);
-
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map || !initializedRef.current) return;
-    const currentCenter = map.getCenter();
-    const dist = Math.abs(currentCenter.lat - center[0]) + Math.abs(currentCenter.lng - center[1]);
-    if (dist > 1) {
-      map.setView(center, zoom, { animate: true });
-    }
-  }, [center, zoom]);
 
   const recIds = new Set(recommendations.map((r) => r.placeId));
   recIdsRef.current = recIds;

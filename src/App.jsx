@@ -10,7 +10,7 @@ import { useCourses } from './hooks/useCourses.js';
 import { useTeeTimes } from './hooks/useTeeTimes.js';
 import { todayString } from './utils/dateUtils.js';
 import { boundsToParams } from './utils/mapHelpers.js';
-import { DEBOUNCE_MS, MIN_SEARCH_ZOOM } from './constants.js';
+import { DEBOUNCE_MS, MIN_SEARCH_ZOOM, LOCATED_ZOOM, DEFAULT_CENTER, DEFAULT_ZOOM } from './constants.js';
 
 export default function App() {
   const geo = useGeolocation();
@@ -22,6 +22,7 @@ export default function App() {
   const [recommendations, setRecommendations] = useState([]);
   const [playerLocations, setPlayerLocations] = useState([]);
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(null);
 
   const [filters, setFilters] = useState({
     priceMin: 0,
@@ -36,6 +37,7 @@ export default function App() {
   const mapRef = useRef(null);
   const debounceRef = useRef(null);
   const lastBoundsRef = useRef(null);
+  const geoAppliedRef = useRef(false);
 
   useEffect(() => {
     fetch('/api/health')
@@ -52,8 +54,23 @@ export default function App() {
     }
   }, [selectedDate, courses, fetchBatchTeeTimes]);
 
+  // Once geolocation resolves, fly to user location ONE TIME only
+  useEffect(() => {
+    if (geo.located && !geoAppliedRef.current && mapRef.current) {
+      geoAppliedRef.current = true;
+      mapRef.current.flyTo(geo.lat, geo.lng, geo.zoom);
+    }
+  }, [geo.located, geo.lat, geo.lng, geo.zoom]);
+
+  const handleMyLocation = useCallback(() => {
+    if (geo.located && mapRef.current) {
+      mapRef.current.flyTo(geo.lat, geo.lng, LOCATED_ZOOM);
+    }
+  }, [geo.located, geo.lat, geo.lng]);
+
   const handleMapMove = useCallback(
     (bounds, zoom) => {
+      setCurrentZoom(zoom);
       if (zoom < MIN_SEARCH_ZOOM) return;
       const { lat, lng, radius } = boundsToParams(bounds);
       const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
@@ -126,8 +143,8 @@ export default function App() {
     <div className="h-screen w-screen relative overflow-hidden">
       <MapView
         ref={mapRef}
-        center={[geo.lat, geo.lng]}
-        zoom={geo.zoom}
+        initialCenter={DEFAULT_CENTER}
+        initialZoom={DEFAULT_ZOOM}
         courses={courses}
         teeTimesMap={teeTimesMap}
         recommendations={recommendations}
@@ -194,12 +211,42 @@ export default function App() {
       )}
 
       {coursesLoading && (
-        <div className="fixed bottom-6 right-6 z-[1100]">
+        <div className="fixed bottom-[4.5rem] right-6 z-[1100]">
           <div className="glass-panel rounded-full px-4 py-2 flex items-center gap-2">
             <div className="w-3 h-3 border-2 border-masters-green border-t-transparent rounded-full animate-spin" />
             <span className="text-xs text-white/60">Loading courses…</span>
           </div>
         </div>
+      )}
+
+      {currentZoom !== null && currentZoom < MIN_SEARCH_ZOOM && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[1100] fade-in">
+          <div className="glass-panel rounded-xl px-5 py-3 flex items-center gap-2">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="M21 21l-4.35-4.35"/>
+              <line x1="11" y1="8" x2="11" y2="14"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+            <span className="text-sm text-white/70">Zoom in to see courses</span>
+          </div>
+        </div>
+      )}
+
+      {geo.located && (
+        <button
+          onClick={handleMyLocation}
+          className="fixed bottom-6 right-6 z-[1100] glass-panel rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg shadow-black/30"
+          title="My Location"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+          </svg>
+        </button>
       )}
     </div>
   );

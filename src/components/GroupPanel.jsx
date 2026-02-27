@@ -73,32 +73,30 @@ export default function GroupPanel({
         return;
       }
 
-      let nearbyCourses = courses.filter((c) => {
-        const dlat = c.lat - centroid.lat;
-        const dlng = c.lng - centroid.lng;
-        return Math.sqrt(dlat * dlat + dlng * dlng) < 1;
-      });
-
-      if (nearbyCourses.length < 5) {
-        nearbyCourses = [...courses]
-          .map((c) => ({
-            ...c,
-            _dist: Math.sqrt(
-              (c.lat - centroid.lat) ** 2 + (c.lng - centroid.lng) ** 2
-            ),
-          }))
-          .sort((a, b) => a._dist - b._dist)
-          .slice(0, 20);
+      // Always fetch courses near the centroid from the API with expanding radius
+      let nearbyCourses = [];
+      const radii = [15000, 30000, 50000];
+      for (const radius of radii) {
+        const res = await fetch(
+          `/api/courses?lat=${centroid.lat}&lng=${centroid.lng}&radius=${radius}`
+        );
+        const data = await res.json();
+        if (res.ok && data.courses) {
+          // Merge without duplicates
+          const existingIds = new Set(nearbyCourses.map((c) => c.placeId));
+          const newCourses = data.courses.filter((c) => !existingIds.has(c.placeId));
+          nearbyCourses = [...nearbyCourses, ...newCourses];
+        }
+        if (nearbyCourses.length >= 10) break;
       }
 
       if (nearbyCourses.length === 0) {
-        const res = await fetch(
-          `/api/courses?lat=${centroid.lat}&lng=${centroid.lng}&radius=30000`
-        );
-        const data = await res.json();
-        nearbyCourses = data.courses || [];
+        setError('No courses found between your group. Try adjusting player locations or expanding the search.');
+        setFinding(false);
+        return;
       }
 
+      // Fetch tee times for all found courses
       let ttMap = { ...teeTimesMap };
       const missing = nearbyCourses.filter((c) => !ttMap[c.placeId]);
       if (missing.length > 0) {
@@ -107,7 +105,7 @@ export default function GroupPanel({
       }
 
       const playerCount = validLocs.length;
-      const scored = scoreCourses(nearbyCourses, validLocs, ttMap, playerCount);
+      const scored = scoreCourses(nearbyCourses, validLocs, ttMap, playerCount, filters);
 
       const withExplanations = scored.map((r) => ({
         ...r,
@@ -132,7 +130,7 @@ export default function GroupPanel({
       setFinding(false);
     }
   }, [
-    locations, courses, teeTimesMap, selectedDate, fetchBatchTeeTimes,
+    locations, teeTimesMap, selectedDate, filters, fetchBatchTeeTimes,
     onRecommendations, mapRef,
   ]);
 
