@@ -41,7 +41,7 @@ export function useTeeTimes() {
         ratings[c.placeId] = c.rating || 3.5;
       });
 
-      const res = await fetch('/api/teetimes/batch', {
+      const res = await fetch('/api/teetimes-batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

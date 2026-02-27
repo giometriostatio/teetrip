@@ -25,7 +25,7 @@ export default function DateSelector({
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="currentColor"/>
             <circle cx="12" cy="9" r="2" fill="#1a1a2e"/>
           </svg>
-          <span className="font-display text-gold text-lg font-semibold tracking-tight">FairwayFinder</span>
+          <span className="font-display text-gold text-lg font-semibold tracking-tight">TeeTrip</span>
         </div>
 
         <div className="h-6 w-px bg-white/10 hidden sm:block" />

@@ -18,8 +18,19 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', hasApiKey: hasKey });
 });
 
+// Mount routers (handles nested paths for backward compat)
 app.use('/api/courses', coursesRouter);
 app.use('/api/teetimes', teetimesRouter);
+
+// Flat path aliases matching Vercel serverless function file names
+app.get('/api/course-photo', (req, res, next) => {
+  req.url = '/photo';
+  coursesRouter(req, res, next);
+});
+app.post('/api/teetimes-batch', (req, res, next) => {
+  req.url = '/batch';
+  teetimesRouter(req, res, next);
+});
 
 const distPath = path.join(__dirname, '..', 'dist');
 app.use(express.static(distPath));
@@ -28,7 +39,7 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`FairwayFinder server running on http://localhost:${PORT}`);
+  console.log(`TeeTrip server running on http://localhost:${PORT}`);
   if (!process.env.GOOGLE_PLACES_API_KEY) {
     console.warn(
       '\n⚠️  GOOGLE_PLACES_API_KEY is not set!\n' +

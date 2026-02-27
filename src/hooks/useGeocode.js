@@ -8,7 +8,7 @@ export function useGeocode() {
       const encoded = encodeURIComponent(address.trim());
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1`,
-        { headers: { 'User-Agent': 'FairwayFinder/1.0' } }
+        { headers: { 'User-Agent': 'TeeTrip/1.0' } }
       );
       const data = await res.json();
       if (data.length > 0) {

@@ -88,7 +88,7 @@ export default function App() {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-charcoal">
         <div className="glass-panel rounded-2xl p-10 max-w-lg text-center">
-          <h1 className="font-display text-3xl text-gold mb-4">FairwayFinder</h1>
+          <h1 className="font-display text-3xl text-gold mb-4">TeeTrip</h1>
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-soft-red/20 flex items-center justify-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
@@ -98,7 +98,7 @@ export default function App() {
           </div>
           <h2 className="text-xl font-semibold mb-3">API Key Required</h2>
           <p className="text-white/60 mb-6 leading-relaxed">
-            FairwayFinder needs a Google Places API key to find golf courses.
+            TeeTrip needs a Google Places API key to find golf courses.
           </p>
           <div className="bg-charcoal-light rounded-xl p-4 text-left text-sm font-mono text-white/80 space-y-1">
             <p className="text-white/40"># 1. Copy the example env file</p>

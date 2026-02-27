@@ -30,7 +30,7 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
         <div className="relative">
           {course.photoRef && !imgError ? (
             <img
-              src={`/api/courses/photo?ref=${course.photoRef}&maxwidth=400`}
+              src={`/api/course-photo?ref=${course.photoRef}&maxwidth=400`}
               alt={course.name}
               className="w-full h-40 object-cover"
               onError={() => setImgError(true)}

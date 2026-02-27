@@ -1,0 +1,12 @@
+{
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/health", "destination": "/api/health" },
+    { "source": "/api/courses", "destination": "/api/courses" },
+    { "source": "/api/course-photo", "destination": "/api/course-photo" },
+    { "source": "/api/teetimes", "destination": "/api/teetimes" },
+    { "source": "/api/teetimes-batch", "destination": "/api/teetimes-batch" }
+  ]
+}
