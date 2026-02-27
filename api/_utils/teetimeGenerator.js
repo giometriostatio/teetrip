@@ -68,11 +68,16 @@ export function generateTeeTimes(placeId, dateString, courseRating = 3.5) {
 
     const skipRoll = rand();
     if (skipRoll > 0.2) {
+      const holesRoll = rand();
+      const is9Hole = holesRoll < 0.3;
+      const holes = is9Hole ? 9 : 18;
+      const holePrice = is9Hole ? Math.round(price * (0.5 + rand() * 0.1)) : price;
+
       teeTimes.push({
         time: timeStr,
-        price,
+        price: holePrice,
         slots,
-        holes: 18,
+        holes,
       });
     }
 

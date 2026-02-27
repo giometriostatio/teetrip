@@ -37,7 +37,8 @@ export function formatTime(timeStr) {
 
 export function getTimeCategory(timeStr) {
   const hour = parseInt(timeStr.split(':')[0], 10);
-  if (hour < 10) return 'morning';
+  if (hour < 8) return 'earlybird';
+  if (hour < 11) return 'morning';
   if (hour < 14) return 'midday';
   return 'afternoon';
 }

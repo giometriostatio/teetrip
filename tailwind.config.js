@@ -10,8 +10,8 @@ export default {
         'masters-green-light': '#008c5f',
         gold: '#c9a84c',
         'gold-light': '#d4b85a',
-        'soft-red': '#c0392b',
-        'soft-red-light': '#e74c3c',
+        'soft-red': '#ff4757',
+        'soft-red-light': '#ff6b81',
       },
       fontFamily: {
         display: ['"Playfair Display"', 'serif'],

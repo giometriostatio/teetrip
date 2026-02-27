@@ -5,8 +5,8 @@ export const COLORS = {
   mastersGreenLight: '#008c5f',
   gold: '#c9a84c',
   goldLight: '#d4b85a',
-  softRed: '#c0392b',
-  softRedLight: '#e74c3c',
+  softRed: '#ff4757',
+  softRedLight: '#ff6b81',
 };
 
 export const DEFAULT_CENTER = [39.8283, -98.5795];

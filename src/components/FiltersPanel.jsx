@@ -1,4 +1,90 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+
+function DualRangeSlider({ min, max, valueMin, valueMax, onChange }) {
+  const trackRef = useRef(null);
+  const draggingRef = useRef(null);
+
+  const pctMin = ((valueMin - min) / (max - min)) * 100;
+  const pctMax = ((valueMax - min) / (max - min)) * 100;
+
+  const getValueFromEvent = useCallback(
+    (e) => {
+      const rect = trackRef.current.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return Math.round(pct * (max - min) + min);
+    },
+    [min, max]
+  );
+
+  const handlePointerDown = useCallback(
+    (handle) => (e) => {
+      e.preventDefault();
+      draggingRef.current = handle;
+    },
+    []
+  );
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!draggingRef.current) return;
+      const val = getValueFromEvent(e);
+      if (draggingRef.current === 'min') {
+        onChange(Math.min(val, valueMax - 5), valueMax);
+      } else {
+        onChange(valueMin, Math.max(val, valueMin + 5));
+      }
+    };
+    const handleUp = () => {
+      draggingRef.current = null;
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleUp);
+    };
+  }, [getValueFromEvent, onChange, valueMin, valueMax]);
+
+  return (
+    <div className="pt-2 pb-1">
+      <div ref={trackRef} className="relative h-1.5 bg-white/10 rounded-full cursor-pointer">
+        <div
+          className="absolute h-full bg-masters-green rounded-full"
+          style={{ left: `${pctMin}%`, right: `${100 - pctMax}%` }}
+        />
+        <div
+          className="absolute w-4 h-4 bg-white rounded-full -translate-x-1/2 -translate-y-1/4 cursor-grab shadow-md hover:scale-110 transition-transform"
+          style={{ left: `${pctMin}%` }}
+          onMouseDown={handlePointerDown('min')}
+          onTouchStart={handlePointerDown('min')}
+        />
+        <div
+          className="absolute w-4 h-4 bg-white rounded-full -translate-x-1/2 -translate-y-1/4 cursor-grab shadow-md hover:scale-110 transition-transform"
+          style={{ left: `${pctMax}%` }}
+          onMouseDown={handlePointerDown('max')}
+          onTouchStart={handlePointerDown('max')}
+        />
+      </div>
+      <div className="flex justify-between mt-2 text-sm font-semibold text-masters-green-light">
+        <span>${valueMin}</span>
+        <span className="text-white/30">—</span>
+        <span>${valueMax}</span>
+      </div>
+    </div>
+  );
+}
+
+const TIME_OPTIONS = [
+  { value: 'earlybird', label: 'Early Bird', desc: '< 8 AM' },
+  { value: 'morning', label: 'Morning', desc: '8-11 AM' },
+  { value: 'midday', label: 'Midday', desc: '11-2 PM' },
+  { value: 'afternoon', label: 'Afternoon', desc: '2-5 PM' },
+];
 
 export default function FiltersPanel({ filters, onFiltersChange }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -6,6 +92,23 @@ export default function FiltersPanel({ filters, onFiltersChange }) {
   const update = (key, value) => {
     onFiltersChange({ ...filters, [key]: value });
   };
+
+  const toggleTimeOfDay = (value) => {
+    const current = filters.timeOfDay;
+    if (current.includes(value)) {
+      update('timeOfDay', current.filter((v) => v !== value));
+    } else {
+      update('timeOfDay', [...current, value]);
+    }
+  };
+
+  const activeFilterCount = [
+    filters.priceMin > 0 || filters.priceMax < 200,
+    filters.timeOfDay.length > 0,
+    filters.holes !== 'all',
+    filters.minRating > 0,
+    filters.availableOnly,
+  ].filter(Boolean).length;
 
   return (
     <>
@@ -25,62 +128,35 @@ export default function FiltersPanel({ filters, onFiltersChange }) {
           <line x1="17" y1="16" x2="23" y2="16"/>
         </svg>
         <span className="text-sm font-medium hidden sm:inline">Filters</span>
+        {activeFilterCount > 0 && (
+          <span className="w-5 h-5 rounded-full bg-masters-green text-white text-[10px] font-bold flex items-center justify-center">
+            {activeFilterCount}
+          </span>
+        )}
       </button>
 
       {isOpen && (
-        <div className="fixed top-32 right-4 z-[1000] w-72 slide-in-left">
+        <div className="fixed top-32 right-4 z-[1000] w-80 slide-in-left">
           <div className="glass-panel rounded-2xl p-5 shadow-2xl shadow-black/30">
             <h3 className="font-display text-lg font-semibold mb-4">Filters</h3>
 
             <div className="space-y-5">
+              {/* Holes Filter */}
               <div>
                 <label className="text-xs text-white/50 uppercase tracking-wider block mb-2">
-                  Price Range
-                </label>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-white/60 w-8">${filters.priceMin}</span>
-                  <input
-                    type="range"
-                    min={25}
-                    max={150}
-                    value={filters.priceMin}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (v <= filters.priceMax) update('priceMin', v);
-                    }}
-                    className="flex-1 accent-masters-green h-1"
-                  />
-                  <input
-                    type="range"
-                    min={25}
-                    max={150}
-                    value={filters.priceMax}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (v >= filters.priceMin) update('priceMax', v);
-                    }}
-                    className="flex-1 accent-masters-green h-1"
-                  />
-                  <span className="text-sm text-white/60 w-8">${filters.priceMax}</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-white/50 uppercase tracking-wider block mb-2">
-                  Time of Day
+                  Holes
                 </label>
                 <div className="flex gap-1.5">
                   {[
                     { value: 'all', label: 'All' },
-                    { value: 'morning', label: 'AM' },
-                    { value: 'midday', label: 'Mid' },
-                    { value: 'afternoon', label: 'PM' },
+                    { value: '9', label: '9 Holes' },
+                    { value: '18', label: '18 Holes' },
                   ].map((opt) => (
                     <button
                       key={opt.value}
-                      onClick={() => update('timeOfDay', opt.value)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        filters.timeOfDay === opt.value
+                      onClick={() => update('holes', opt.value)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        filters.holes === opt.value
                           ? 'bg-masters-green text-white'
                           : 'bg-white/[0.05] text-white/50 hover:bg-white/10'
                       }`}
@@ -91,6 +167,52 @@ export default function FiltersPanel({ filters, onFiltersChange }) {
                 </div>
               </div>
 
+              {/* Time of Day - Multi-select chips */}
+              <div>
+                <label className="text-xs text-white/50 uppercase tracking-wider block mb-2">
+                  Time of Day
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {TIME_OPTIONS.map((opt) => {
+                    const isActive = filters.timeOfDay.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => toggleTimeOfDay(opt.value)}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                          isActive
+                            ? 'bg-masters-green text-white'
+                            : 'bg-white/[0.05] text-white/50 hover:bg-white/10'
+                        }`}
+                      >
+                        {opt.label}
+                        <span className="text-[10px] ml-1 opacity-60">{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {filters.timeOfDay.length === 0 && (
+                  <p className="text-[10px] text-white/30 mt-1">All times shown</p>
+                )}
+              </div>
+
+              {/* Price Range - Dual handle slider */}
+              <div>
+                <label className="text-xs text-white/50 uppercase tracking-wider block mb-1">
+                  Price Range
+                </label>
+                <DualRangeSlider
+                  min={0}
+                  max={200}
+                  valueMin={filters.priceMin}
+                  valueMax={filters.priceMax}
+                  onChange={(newMin, newMax) => {
+                    onFiltersChange({ ...filters, priceMin: newMin, priceMax: newMax });
+                  }}
+                />
+              </div>
+
+              {/* Minimum Rating */}
               <div>
                 <label className="text-xs text-white/50 uppercase tracking-wider block mb-2">
                   Minimum Rating
@@ -119,6 +241,7 @@ export default function FiltersPanel({ filters, onFiltersChange }) {
                 </div>
               </div>
 
+              {/* Players */}
               <div>
                 <label className="text-xs text-white/50 uppercase tracking-wider block mb-2">
                   Players
@@ -140,6 +263,7 @@ export default function FiltersPanel({ filters, onFiltersChange }) {
                 </div>
               </div>
 
+              {/* Available Only */}
               <div className="flex items-center justify-between">
                 <label className="text-xs text-white/50 uppercase tracking-wider">
                   Available Only

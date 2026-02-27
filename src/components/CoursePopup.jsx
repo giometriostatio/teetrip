@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { formatTime, getTimeCategory } from '../utils/dateUtils.js';
+import { haversineDistance, kmToMiles } from '../utils/mapHelpers.js';
 
-export default function CoursePopup({ course, date, teeTimesData, filters, onClose }) {
+export default function CoursePopup({ course, date, teeTimesData, filters, userLocation, onClose }) {
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
@@ -14,10 +15,15 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
 
   const filteredTimes = teeTimes.filter((tt) => {
     if (tt.price < filters.priceMin || tt.price > filters.priceMax) return false;
-    if (filters.timeOfDay !== 'all' && getTimeCategory(tt.time) !== filters.timeOfDay) return false;
+    if (filters.timeOfDay.length > 0 && !filters.timeOfDay.includes(getTimeCategory(tt.time))) return false;
     if (tt.slots < filters.players) return false;
+    if (filters.holes !== 'all' && tt.holes !== Number(filters.holes)) return false;
     return true;
   });
+
+  const distanceMi = userLocation
+    ? kmToMiles(haversineDistance(userLocation.lat, userLocation.lng, course.lat, course.lng))
+    : null;
 
   const handleBook = (courseName) => {
     const query = encodeURIComponent(`${courseName} book tee time`);
@@ -63,7 +69,14 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
 
         <div className="p-4">
           <h2 className="font-display text-xl font-semibold leading-tight">{course.name}</h2>
-          <p className="text-white/50 text-sm mt-1 leading-snug">{course.address}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-white/50 text-sm leading-snug flex-1">{course.address}</p>
+            {distanceMi !== null && (
+              <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-white/[0.06] text-white/60 text-xs font-medium">
+                {distanceMi < 10 ? distanceMi.toFixed(1) : Math.round(distanceMi)} mi
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-3 mt-3">
             {course.rating > 0 && (
@@ -90,7 +103,7 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
           ) : !isAvailable ? (
             <div className="text-center py-8">
               <div className="w-12 h-12 mx-auto rounded-full bg-soft-red/10 flex items-center justify-center mb-3">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff4757" strokeWidth="2">
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="15" y1="9" x2="9" y2="15"/>
                   <line x1="9" y1="9" x2="15" y2="15"/>
@@ -102,7 +115,7 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
           ) : filteredTimes.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-white/50 text-sm">No tee times match your filters</p>
-              <p className="text-white/30 text-xs mt-1">Try adjusting price, time, or player count</p>
+              <p className="text-white/30 text-xs mt-1">Try adjusting price, time, holes, or player count</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -114,6 +127,9 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
                   <div className="flex items-center gap-3">
                     <div className="text-sm font-semibold w-20">{formatTime(tt.time)}</div>
                     <div className="text-masters-green font-semibold text-sm">${tt.price}</div>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-white/40 font-medium">
+                      {tt.holes}H
+                    </span>
                     <div className="flex items-center gap-1 text-white/40 text-xs">
                       {[...Array(4)].map((_, j) => (
                         <div
@@ -123,7 +139,6 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
                           }`}
                         />
                       ))}
-                      <span className="ml-0.5">{tt.slots}</span>
                     </div>
                   </div>
                   <button
@@ -137,6 +152,18 @@ export default function CoursePopup({ course, date, teeTimesData, filters, onClo
             </div>
           )}
         </div>
+
+        {/* Full-width book button at bottom */}
+        {isAvailable && filteredTimes.length > 0 && (
+          <div className="p-4 pt-0">
+            <button
+              onClick={() => handleBook(course.name)}
+              className="w-full py-3 rounded-xl bg-masters-green hover:bg-masters-green-light text-white font-semibold text-sm transition-colors shadow-lg shadow-masters-green/20"
+            >
+              Book at {course.name.length > 25 ? course.name.slice(0, 25) + '...' : course.name}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

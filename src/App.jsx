@@ -24,9 +24,10 @@ export default function App() {
   const [apiKeyMissing, setApiKeyMissing] = useState(false);
 
   const [filters, setFilters] = useState({
-    priceMin: 25,
-    priceMax: 150,
-    timeOfDay: 'all',
+    priceMin: 0,
+    priceMax: 200,
+    timeOfDay: [],
+    holes: 'all',
     minRating: 0,
     players: 1,
     availableOnly: false,
@@ -90,7 +91,7 @@ export default function App() {
         <div className="glass-panel rounded-2xl p-10 max-w-lg text-center">
           <h1 className="font-display text-3xl text-gold mb-4">TeeTrip</h1>
           <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-soft-red/20 flex items-center justify-center">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff4757" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
               <line x1="15" y1="9" x2="9" y2="15"/>
               <line x1="9" y1="9" x2="15" y2="15"/>
@@ -133,6 +134,7 @@ export default function App() {
         playerLocations={playerLocations}
         filters={filters}
         selectedDate={selectedDate}
+        selectedCourseId={selectedCourse?.placeId || null}
         onMapMove={handleMapMove}
         onCourseClick={handleCourseClick}
       />
@@ -163,6 +165,7 @@ export default function App() {
           date={selectedDate}
           teeTimesData={teeTimesMap[selectedCourse.placeId]}
           filters={filters}
+          userLocation={geo.located ? { lat: geo.lat, lng: geo.lng } : null}
           onClose={handleClosePopup}
         />
       )}
@@ -179,7 +182,7 @@ export default function App() {
       {error && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[1100] fade-in">
           <div className="glass-panel rounded-xl px-5 py-3 flex items-center gap-3 border-soft-red/30">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff4757" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
               <line x1="12" y1="8" x2="12" y2="12"/>
               <line x1="12" y1="16" x2="12.01" y2="16"/>

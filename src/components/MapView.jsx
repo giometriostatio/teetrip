@@ -14,6 +14,7 @@ const MapView = forwardRef(function MapView(
     playerLocations,
     filters,
     selectedDate,
+    selectedCourseId,
     onMapMove,
     onCourseClick,
   },
@@ -26,11 +27,15 @@ const MapView = forwardRef(function MapView(
   const playerMarkersRef = useRef([]);
   const recIdsRef = useRef(new Set());
   const initializedRef = useRef(false);
+  const selectedIdRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     getMap: () => mapInstanceRef.current,
     fitBounds: (bounds, options) => {
       mapInstanceRef.current?.fitBounds(bounds, options);
+    },
+    flyTo: (lat, lng, zoomLevel = 15) => {
+      mapInstanceRef.current?.flyTo([lat, lng], zoomLevel, { duration: 1.2 });
     },
   }));
 
@@ -110,6 +115,7 @@ const MapView = forwardRef(function MapView(
     courses.forEach((course) => {
       const tt = teeTimesMap[course.placeId];
       const isRec = recIdsRef.current.has(course.placeId);
+      const isSelected = course.placeId === selectedIdRef.current;
 
       if (filters.availableOnly && tt && !tt.available) {
         if (markersRef.current.has(course.placeId)) {
@@ -124,7 +130,7 @@ const MapView = forwardRef(function MapView(
       else if (tt && !tt.available) type = 'unavailable';
       else if (!tt) type = 'available';
 
-      const icon = createMarkerIcon(type);
+      const icon = createMarkerIcon(type, isSelected);
       if (!icon) return;
 
       const existing = markersRef.current.get(course.placeId);
@@ -144,9 +150,26 @@ const MapView = forwardRef(function MapView(
     });
   }, [courses, teeTimesMap, filters.availableOnly, onCourseClick]);
 
+  // Update selected marker ref and re-render markers when selection changes
+  useEffect(() => {
+    selectedIdRef.current = selectedCourseId;
+    updateMarkers();
+  }, [selectedCourseId, updateMarkers]);
+
   useEffect(() => {
     updateMarkers();
   }, [updateMarkers, selectedDate, recommendations]);
+
+  // FlyTo when a course is selected
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !selectedCourseId) return;
+
+    const course = courses.find((c) => c.placeId === selectedCourseId);
+    if (course) {
+      map.flyTo([course.lat, course.lng], 15, { duration: 1.2 });
+    }
+  }, [selectedCourseId, courses]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
